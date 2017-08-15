@@ -1,89 +1,144 @@
+//Mini Underscore 
+
+Array.prototype.oIndexOf = function(condition){
+    let objects = this;
+    for (var i = 0, object; object=objects[i]; i++) {
+        console.log(object)
+        if(condition(object)) return i;                
+    }
+}
+
+
 var Seltc = (function (){
 
     var seltcs = [];
 
+    var containerValues = document.createElement("DIV"),
+        inputValue = document.createElement("INPUT"),
+        listOptions = document.createElement("UL");
+    
+    var selectedOptions = [];
+        
+    
+    var options = [
+        {
+            id:1,
+            name:"Rojo"
+        },
+        {
+            id:2,
+            name:"Grande"
+        },
+        {
+            id:3,
+            name:"Ancho"
+        },{
+            id:4,
+            name:"Pelo aspero"
+        },
+        {
+            id:5,
+            name:"Chitzu"
+        },
+        {
+            id:6,
+            name:"Enfermo"
+        }];
+
+    var availableOptions = options;
+    
     var init = function(){
-        var elements = document.getElementsByClassName("selectize-input");
-        for (var index = 0, element; element = elements[index]; index++) {
+        let elements = document.getElementsByClassName("selectize-input");
+        for (let index = 0, element; element = elements[index]; index++) {
             seltcs.push(_genSelect(element)) ;
         }
     }
+    var count = 0;
 
-
-    // var searchElements = function(params){
-
-    //     new Promise(function(resolve,reject){
-    //         var xhttp = new XMLHttpRequest();
-    //         xhttp.open("GET","/features",true);
-    //         xhttp.setRequestHeader("Content-Type","application/json");
-    //         xhttp.onload = function(res){
-    //             resolve();                
-    //         }
-    //         xhttp.onerror = function(){
-    //             reject();
-    //         }
-    //         xhttp.send(params);
-
-    //     });
-    // }
-
-    var _genSelect = function(element){
-
-        element.style.display = "none";
-
-        var isClickedAnyOption = false;
-
-        var selectedItems = [],selectedItemsIds=[];
-
-        var insertAfter =  function (newNode, referenceNode) {
-            referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+    var clearList  = function(){
+        while (listOptions.firstChild) {
+            listOptions.removeChild(listOptions.firstChild);
         }
+    }
 
-        var values = [
-            {
-                _id:1,
-                name:"Rojo"
-            },
-            {
-                _id:2,
-                name:"Grande"
-            },
-            {
-                _id:3,
-                name:"Ancho"
-            },{
-                _id:4,
-                name:"Pelo aspero"
-            },
-            {
-                _id:5,
-                name:"Chitzu"
-            },
-            {
-                _id:6,
-                name:"Enfermo"
-            }];
+    var SeltcEvents = {
+        keyup(e){
+            let field = e.target;
+            let results = [];            
 
-        var container = document.createElement("DIV");
-        container.style.width = "100%";
-        container.style.height = "45px";
+            //Calculate input width from options selected
+            inputValue.offsetWidth += inputValue.offsetWidth * field.length*3;
+            console.log(options)
+            //Check if the input's value match with an any existing option in the initial array
+            for (let i = 0,option; option = availableOptions[i]; i++) {
+                if(option.name.toLowerCase().indexOf(field.value.toLowerCase()) >= 0) results.push(option)
+            }
 
-        var containerValues = document.createElement("DIV");
-        var inputValue = document.createElement("INPUT");
-        var listOptions = document.createElement("UL");
-        inputValue.style.width = "100px";
+            if (!field.value) {
+                count++;
+                if(count==2){
+                    if(selectedOptions.length) containerValues.childNodes[selectedOptions.length-1].remove();
+                    let option = selectedOptions[selectedOptions.length-1];
+                    selectedOptions.splice(selectedOptions.length-1,1);
+                    availableOptions.push(option);
+                    count = 0;                        
+                }            
+            }else{
+                count = 0;                
+            }
 
-        containerValues.className = "sl-values";
-        containerValues.appendChild(inputValue);
-        listOptions.className = "sl-options";
 
-        container.appendChild(containerValues);
-        container.appendChild(listOptions);
+            clearList();
+            
+            for (var i = 0, result; result = results[i]; i++) {
+                let optionItem = document.createElement("LI");
+                optionItem.setAttribute("option-name",result.name);
+                optionItem.setAttribute("option-id",result.id);
+                optionItem.onclick = function () {   
 
-        insertAfter(container,element);
+                    clearList();
 
-        inputValue.addEventListener('keypress',function(e){
-            console.log(e);
+                    isClickedAnyOption = true;
+                    inputValue.value = "";
+                    listOptions.style.display = "none";
+                    
+                    let name = this.getAttribute("option-name");
+                    let id = this.getAttribute("option-id");
+
+                    let option = {id,name};
+
+                    var optionDiv = document.createElement("DIV");
+                    isClickedAnyOption = true;
+
+
+                    optionDiv.onclick = function(){
+                        var index = selectedOptions.oIndexOf((v)=> v.id == option.id);
+                        selectedOptions.splice(index,1);
+                        availableOptions.push(option);
+                        optionDiv.remove();
+
+                       
+                    }
+
+                    // Check if the option selected exist in the option's list for delete it 
+                    // of available options
+                    let index = availableOptions.oIndexOf((v)=> v.id == option.id );
+                    availableOptions.splice(index,1);
+                    
+                    optionDiv.innerHTML = option.name;
+                    if(selectedOptions.oIndexOf((v)=> v.id == option.id )>=0) return;
+
+                    selectedOptions.push(option);
+
+                    containerValues.insertBefore(optionDiv,inputValue);
+                    isClickedAnyOption = false;
+                }
+                optionItem.innerHTML = result.name;
+                listOptions.appendChild(optionItem);                
+            }
+
+        },
+        keypress(e){
             if(e.charCode==13){
                 var optionName = this.value;
                 var optionDiv = document.createElement("DIV");
@@ -99,80 +154,61 @@ var Seltc = (function (){
                 selectedItems.push(optionName);
                 containerValues.insertBefore(optionDiv,containerValues.childNodes[0]);
             }
-
-        });
-
-        inputValue.addEventListener("focus",function(){
+        },
+        focus(){
             listOptions.style.display = "block";
             isClickedAnyOption = false;
-        });
-
-        inputValue.addEventListener("blur",function(){
+        },
+        blur(){
             setTimeout(function(){
                 if(!isClickedAnyOption)  listOptions.style.display = "none";
             },100)
-        })
+        }
+    }
 
-        inputValue.addEventListener('keyup', function(e){
-            var field = e.target;
-            inputValue.offsetWidth += inputValue.offsetWidth * field.length*3;
-            var results = [];            
-            for (var i = 0,value; value = values[i]; i++) {
-                if(value.name.toLowerCase().indexOf(field.value.toLowerCase()) >= 0) results.push(value)
-            }
+    var _genSelect = function(element){
 
-            if (!field.value) {
-                if(selectedItems.length) containerValues.childNodes[selectedItems.length-1].remove();
-                selectedItems.splice(selectedItems.length-1,1);
-            }
+        element.style.display = "none";
+
+        var isClickedAnyOption = false;
 
 
-            while (listOptions.firstChild) {
-                listOptions.removeChild(listOptions.firstChild);
-            }
-            
-            for (var i = 0, result; result = results[i]; i++) {
-                var option = document.createElement("LI");
-                option.setAttribute("option-name",result.name);
-                option.setAttribute("option-id",result._id);
-                option.onclick = function () {   
-                    
-                    isClickedAnyOption = true;
-                    inputValue.value = "";
-                    listOptions.style.display = "none";
-                    var optionName = this.getAttribute("option-name");
-                    var optionId = this.getAttribute("option-id")
-                    var optionDiv = document.createElement("DIV");
-                    isClickedAnyOption = true;
-                    optionDiv.onclick = function(){
-                        var index = selectedItems.indexOf(optionName);
-                        selectedItems.splice(index,1);
-                        selectedItemsIds.splice(index,1)
-                        optionDiv.remove();
-                    }
+        var insertAfter =  function (newNode, referenceNode) {
+            referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+        }
 
-                    optionDiv.innerHTML = optionName;
-                    if(selectedItems.indexOf(optionName)>=0) return;
-                    selectedItems.push(optionName);
-                    selectedItemsIds.push(optionId)
-                    containerValues.insertBefore(optionDiv,containerValues.childNodes[0]);
-                    isClickedAnyOption = false;
-                    
 
-                }
-                option.innerHTML = result.name;
-                listOptions.appendChild(option);                
-            }
 
-        })      
+        
+        let container = document.createElement("DIV");
+        container.style.width = "100%";
+        container.style.height = "45px";
+
+        // Create components for select
+        
+
+        inputValue.style.width = "100px";
+
+        containerValues.className = "sl-values";
+        containerValues.appendChild(inputValue);
+        listOptions.className = "sl-options";
+
+        container.appendChild(containerValues);
+        container.appendChild(listOptions);
+
+        insertAfter(container,element);
+
+        inputValue.addEventListener('keypress',SeltcEvents.keypress);
+        inputValue.addEventListener("focus", SeltcEvents.focus);
+        inputValue.addEventListener("blur",SeltcEvents.blur);
+        inputValue.addEventListener('keyup', SeltcEvents.keyup);      
 
         var reset = function(){
             
         }  
 
         return {
-            selectedItems: selectedItems,
-            selectedItemsIds: selectedItemsIds,
+            selectedOptions: selectedOptions,
             container: container,
             reset: reset
         }
